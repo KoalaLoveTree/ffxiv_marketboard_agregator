@@ -10,7 +10,7 @@ use sqlx::{Pool, Postgres};
 use std::collections::HashMap;
 use url::Url;
 
-pub async fn import_items_trade_volume(
+pub async fn import_items_trade_volumes(
     pool: &Pool<Postgres>,
     data_center_name: String,
     home_world_name: String,
@@ -66,14 +66,12 @@ pub async fn import_items_trade_volume(
                     message: err.to_string(),
                 }
             })?;
-            let world_name_param = format!("/{}", world.name);
-            let item_id_param = format!("/{}", item.item_id);
             url.path_segments_mut()
                 .map_err(|_err| WrongUrlBaseError)?
-                .push(&world_name_param);
+                .push(&world.name);
             url.path_segments_mut()
                 .map_err(|_err| WrongUrlBaseError)?
-                .push(&item_id_param);
+                .push(&item.item_id.to_string());
 
             let body_sale_history = reqwest::get(url.as_str())
                 .await
@@ -133,14 +131,12 @@ pub async fn import_items_trade_volume(
                     Url::parse("https://universalis.app/api/v2").map_err(|err| UrlParseError {
                         message: err.to_string(),
                     })?;
-                let world_name_param = format!("/{}", world.name);
-                let item_id_param = format!("/{}", item.item_id);
                 url.path_segments_mut()
                     .map_err(|_err| WrongUrlBaseError)?
-                    .push(&world_name_param);
+                    .push(&world.name);
                 url.path_segments_mut()
                     .map_err(|_err| WrongUrlBaseError)?
-                    .push(&item_id_param);
+                    .push(&item.item_id.to_string());
                 url.query_pairs_mut()
                     .append_pair("fields", "nqSaleVelocity,hqSaleVelocity");
 
@@ -186,10 +182,6 @@ pub async fn import_items_trade_volume(
             }
         }
 
-        // let home_world_avg_price: f64 =
-        //     *(avg_price_per_world).get(&home_world.world_id).ok_or(|| -> ImportError {
-        //         return HashMapAccessErrorError;
-        //     })?;
         let home_world_avg_price: f64 = match avg_price_per_world.get(&home_world.world_id) {
             None => {
                 return Err(HashMapAccessError);
@@ -206,7 +198,7 @@ pub async fn import_items_trade_volume(
             }
         }
 
-        let _row: (i64, ) = sqlx::query_as("insert into items_trade_volume (item_id, world_id, sale_score, price_diff_score, cheapest_world_id) values ($1, $2, $3, $4, $5) returning item_id")
+        let _row: (i64, ) = sqlx::query_as("insert into items_trade_volumes (item_id, world_id, sale_score, price_diff_score, cheapest_world_id) values ($1, $2, $3, $4, $5) returning item_id")
             .bind(item.item_id)
             .bind(home_world.world_id)
             .bind(velocity)

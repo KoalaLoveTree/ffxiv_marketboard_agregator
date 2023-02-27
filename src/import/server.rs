@@ -56,7 +56,7 @@ pub async fn import_servers_data(pool: &Pool<Postgres>) -> Result<(), ImportErro
     };
 
     for data_center in data_centers {
-        let data_center_row: (i64, ) = sqlx::query_as("insert into data_centers (name, region) values ($1, $2) on conflict (name) do nothing returning item_id")
+        let data_center_row: (i64, ) = sqlx::query_as("insert into data_centers (name, region) values ($1, $2) on conflict (name) do nothing returning id")
             .bind(data_center["name"].as_str())
             .bind(data_center["region"].as_str())
             .fetch_one(pool)
@@ -78,11 +78,28 @@ pub async fn import_servers_data(pool: &Pool<Postgres>) -> Result<(), ImportErro
 
         for world_id in data_center_worlds {
             for world in worlds {
-                if world["item_id"].as_i64() != world_id.as_i64() {
+                let data_center_world_id = match world_id.as_i64() {
+                    None => {
+                        return Err(JsonMissedDataError {
+                            field_name: "data_center.worlds.id".to_string(),
+                        });
+                    }
+                    Some(id) => id,
+                };
+                let world_id = match world["id"].as_i64() {
+                    None => {
+                        return Err(JsonMissedDataError {
+                            field_name: "worlds.id".to_string(),
+                        });
+                    }
+                    Some(id) => id,
+                };
+                if world_id != data_center_world_id {
                     continue;
                 }
+
                 let _row: (i64, ) = sqlx::query_as("insert into worlds (world_id, name, data_center_id) values ($1, $2, $3) on conflict (world_id) do update set name = $2 returning world_id")
-                    .bind(world["item_id"].as_i64())
+                    .bind(world["id"].as_i64())
                     .bind(world["name"].as_str())
                     .bind(data_center_row.0)
                     .fetch_one(pool)
