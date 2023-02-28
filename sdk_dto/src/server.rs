@@ -1,13 +1,17 @@
 #[derive(Debug, Clone)]
 pub struct DataCenter {
-    pub id: i64,
     pub name: String,
     pub region: String,
+    pub worlds_ids: Vec<u64>,
 }
 
 #[derive(Debug, Clone)]
 pub struct World {
-    pub world_id: i64,
+    pub id: u64,
     pub name: String,
-    pub data_center_id: i64,
+}
+
+pub struct Server {
+    pub data_center: DataCenter,
+    pub worlds: Vec<World>,
 }

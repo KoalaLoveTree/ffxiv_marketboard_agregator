@@ -1,0 +1,11 @@
+[package]
+name = "db_sdk"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sdk_dto = { path = "../sdk_dto" }
+error = { path = "../error" }
+sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres", "time", "bigdecimal"] }
