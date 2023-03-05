@@ -91,11 +91,11 @@ impl ItemTrades {
         items_trade_volumes: Vec<ItemTradeVolume>,
     ) -> Result<(), Error> {
         let mut query_builder: QueryBuilder<MySql> = QueryBuilder::new(
-            "INSERT IGNORE INTO items_trade_volumes (item_id, world_id, sale_score, price_diff_score, cheapest_world_id)"
+            "INSERT IGNORE INTO items_trade_volumes (item_id, world_id, sale_score, price_diff_score, cheapest_world_id, home_world_avg_price)"
         );
 
         let items_trade_volumes_chunks =
-            items_trade_volumes.chunks(BIND_LIMIT / 5);
+            items_trade_volumes.chunks(BIND_LIMIT / 6);
 
         for items_trade_volumes_chunk in items_trade_volumes_chunks {
             query_builder.push_values(items_trade_volumes_chunk, |mut b, item_trade_volume| {
@@ -103,7 +103,8 @@ impl ItemTrades {
                     .push_bind(item_trade_volume.world_id)
                     .push_bind(item_trade_volume.sale_score)
                     .push_bind(item_trade_volume.price_diff_score)
-                    .push_bind(item_trade_volume.cheapest_world_id);
+                    .push_bind(item_trade_volume.cheapest_world_id)
+                    .push_bind(item_trade_volume.home_world_avg_price);
             });
 
             query_builder.build().execute(&self.pool).await?;
