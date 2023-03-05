@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sdk_dto = { path = "../sdk_dto" }
-error = { path = "../error" }
+universalis_sdk = { path = "../universalis_sdk" }
+xivapi_sdk = { path = "../xivapi_sdk" }
 sqlx = { version = "0.6.2", features = ["runtime-tokio-rustls", "postgres", "time", "bigdecimal"] }
+thiserror = "1.0.38"

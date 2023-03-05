@@ -1,10 +1,8 @@
 [workspace]
 
 members = [
-    "aggregator",
-    "universalis_sdk",
-    "xivapi_sdk",
-    "db_sdk",
-    "error",
-    "sdk_dto",
+    "crates/aggregator",
+    "crates/universalis_sdk",
+    "crates/xivapi_sdk",
+    "crates/db_sdk",
 ]
