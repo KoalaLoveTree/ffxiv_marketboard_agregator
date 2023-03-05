@@ -13,6 +13,7 @@ use dotenv::dotenv;
 const DATA_CENTER_NAME_ARG: &str = "-dcn";
 const HOME_WORLD_NAME_ARG: &str = "-hwn";
 
+#[derive(Debug, Deserialize)]
 struct Config {
     database_url: String,
 }
@@ -20,8 +21,10 @@ struct Config {
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    let config = Config{
-        database_url: std::env::var("DATABASE_URL").expect("DATABASE_URL must be set").to_string(),
+
+    let config = match envy::from_env::<Config>() {
+        Ok(config) => config,
+        Err(error) => panic!("{:#?}", error)
     };
 
     let args: Vec<String> = env::args().collect();

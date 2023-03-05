@@ -39,6 +39,7 @@ pub struct DBItemTradeVolume {
     pub cheapest_world_id: u64,
     pub sale_score: f64,
     pub price_diff_score: f64,
+    pub home_world_avg_price: f64,
 }
 
 pub struct ItemData {
