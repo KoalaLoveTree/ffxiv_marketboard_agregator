@@ -1,0 +1,25 @@
+version: '3.1'
+
+services:
+  db:
+    image: mariadb:10.9.5
+    container_name: ffxiv_marketboard_aggregator_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ffxiv_marketboard_aggregator
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - data_volume:/var/lib/mysql
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+volumes:
+  data_volume:

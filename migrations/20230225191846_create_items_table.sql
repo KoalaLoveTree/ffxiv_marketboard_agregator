@@ -1,3 +1,6 @@
-CREATE TABLE IF NOT EXISTS "items" (
-                                       "item_id" BigInt PRIMARY KEY, "name" TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS items
+(
+    `item_id` BIGINT UNSIGNED NOT NULL,
+    `name`    TEXT            NOT NULL,
+    PRIMARY KEY (item_id)
 );
