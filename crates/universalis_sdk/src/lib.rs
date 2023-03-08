@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 pub mod errors;
+pub mod xivapi;
 
 use crate::errors::Error;
 use serde::{Deserialize, Serialize};
@@ -90,7 +91,7 @@ pub async fn get_servers() -> Result<Vec<Server>, Error> {
 async fn get_data_center_worlds(data_center: &DataCenter) -> Result<Vec<World>, Error> {
     let mut url = Url::parse(UNIVERSALIS_URL)?;
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push("worlds");
 
     let body_worlds = reqwest::get(url.as_str()).await?.text().await?;
@@ -110,12 +111,12 @@ async fn get_data_center_worlds(data_center: &DataCenter) -> Result<Vec<World>, 
 async fn get_data_centers() -> Result<Vec<DataCenter>, Error> {
     let mut url = Url::parse(UNIVERSALIS_URL)?;
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push("data-centers");
 
     let body_data_centers = reqwest::get(url.as_str()).await?.text().await?;
 
-    let data_centers: Vec<DataCenter> = serde_json::from_str(&body_data_centers)?;
+    let data_centers = serde_json::from_str(&body_data_centers)?;
 
     Ok(data_centers)
 }
@@ -123,12 +124,12 @@ async fn get_data_centers() -> Result<Vec<DataCenter>, Error> {
 pub async fn get_marketable_items_ids() -> Result<Vec<u64>, Error> {
     let mut url = Url::parse(UNIVERSALIS_URL)?;
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push("marketable");
 
     let body_marketable_items = reqwest::get(url.as_str()).await?.text().await?;
 
-    let marketable_items_ids: Vec<u64> = serde_json::from_str(&body_marketable_items)?;
+    let marketable_items_ids = serde_json::from_str(&body_marketable_items)?;
 
     Ok(marketable_items_ids)
 }
@@ -139,17 +140,17 @@ pub async fn get_item_velocity_by_world(
 ) -> Result<ItemVelocity, Error> {
     let mut url = Url::parse(UNIVERSALIS_URL)?;
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push(&world_name);
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push(&item_id.to_string());
     url.query_pairs_mut()
         .append_pair("fields", "nqSaleVelocity,hqSaleVelocity");
 
     let body_velocity = reqwest::get(url.as_str()).await?.text().await?;
 
-    let item_velocity: ItemVelocity = serde_json::from_str(&body_velocity[..])?;
+    let item_velocity = serde_json::from_str(&body_velocity[..])?;
 
     Ok(item_velocity)
 }
@@ -160,25 +161,25 @@ pub async fn get_item_sale_history_by_world(
 ) -> Result<ItemSaleHistory, Error> {
     let mut url = Url::parse(UNIVERSALIS_URL)?;
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push("history");
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push(&world_name);
 
-    let mut ids_param = item_ids
+    let ids_param = item_ids
         .iter()
-        .map(|x| x.to_string() + ",")
-        .collect::<String>();
-    ids_param = ids_param.trim_end_matches(',').to_string();
+        .map(|id| id.to_string())
+        .collect::<Vec<_>>()
+        .join(",");
 
     url.path_segments_mut()
-        .map_err(|_| crate::errors::Error::UrlParseBase)?
+        .map_err(|_| Error::UrlParseBase)?
         .push(&ids_param);
 
     let body_sale_history = reqwest::get(url.as_str()).await?.text().await?;
 
-    let sale_history: ItemSaleHistory = serde_json::from_str(&body_sale_history[..])?;
+    let sale_history = serde_json::from_str(&body_sale_history[..])?;
 
     Ok(sale_history)
 }

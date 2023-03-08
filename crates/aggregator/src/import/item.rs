@@ -1,14 +1,14 @@
+use crate::db::ItemData;
 use crate::import::errors::Error;
-use db_sdk::ItemData;
 use universalis_sdk::get_marketable_items_ids;
-use xivapi_sdk::get_all_items;
+use universalis_sdk::xivapi::get_all_items;
 
-pub struct ItemImport<'a> {
-    item_data: &'a ItemData,
+pub struct ItemImport {
+    item_data: ItemData,
 }
 
-impl<'a> ItemImport<'a> {
-    pub fn new(item_data: &'a ItemData) -> Self {
+impl ItemImport {
+    pub fn new(item_data: ItemData) -> Self {
         Self { item_data }
     }
 
