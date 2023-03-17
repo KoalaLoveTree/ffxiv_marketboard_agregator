@@ -1,11 +1,18 @@
 #![allow(non_snake_case)]
 
+extern crate core;
+
 pub mod errors;
 pub mod xivapi;
 
 use crate::errors::Error;
+use crate::errors::Error::StringError;
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Write;
 use url::Url;
 
 const UNIVERSALIS_URL: &str = "https://universalis.app/api/v2";
@@ -177,9 +184,14 @@ pub async fn get_item_sale_history_by_world(
         .map_err(|_| Error::UrlParseBase)?
         .push(&ids_param);
 
-    let body_sale_history = reqwest::get(url.as_str()).await?.text().await?;
+    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(10);
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
 
-    let sale_history = serde_json::from_str(&body_sale_history[..])?;
+    let body_sale_history = client.get(url).send().await?.text().await?;
+
+    let sale_history = serde_json::from_str(&body_sale_history)?;
 
     Ok(sale_history)
 }

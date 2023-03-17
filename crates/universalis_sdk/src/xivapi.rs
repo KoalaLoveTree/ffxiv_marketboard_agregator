@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 const XIVAPI_URL: &str = "https://xivapi.com";
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct Item {
+    #[serde(alias = "ID")]
     pub id: u64,
+    #[serde(alias = "Name")]
     pub name: String,
 }
 

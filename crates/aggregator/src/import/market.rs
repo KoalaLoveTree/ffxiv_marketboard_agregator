@@ -4,6 +4,8 @@ use futures::future::try_join_all;
 use futures::TryStreamExt;
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
+use std::thread::sleep;
+use std::time::Duration;
 use universalis_sdk::{
     get_item_sale_history_by_world, get_item_velocity_by_world, ItemTradeVolume,
 };
@@ -46,7 +48,7 @@ impl MarketImport {
 
         for world in &server.worlds {
             let items_handles: Vec<_> = items
-                .chunks(100)
+                .chunks(40)
                 .map(|chunk| {
                     let chunk_ids = chunk.iter().map(|item| item.item_id).collect();
 
@@ -92,8 +94,10 @@ impl MarketImport {
                             .get_mut(&item_id)
                             .ok_or(Error::HashMapAccess)?;
 
-                        if lowest_avg_item_price.price > total_gil_spent / quantity {
-                            lowest_avg_item_price.price = total_gil_spent / quantity;
+                        let avg_item_price = total_gil_spent / quantity;
+
+                        if lowest_avg_item_price.price > avg_item_price {
+                            lowest_avg_item_price.price = avg_item_price;
                             lowest_avg_item_price.world_id = world.world_id;
                             if home_world.world_id == world.world_id {
                                 lowest_avg_item_price.home_world_price = total_gil_spent / quantity;
