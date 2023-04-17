@@ -1,5 +1,3 @@
-extern crate core;
-
 mod db;
 mod import;
 
@@ -71,6 +69,10 @@ async fn sync_base_data(pool: Pool<MySql>) {
     let item_data = ItemData::new(pool.clone());
     let item_import = ItemImport::new(item_data);
     item_import.import_marketable_items().await.unwrap();
+    println!("Done!");
+
+    println!("Syncing items data ...");
+    item_import.sync_items().await.unwrap();
     println!("Done!");
 
     println!("Importing servers data ...");

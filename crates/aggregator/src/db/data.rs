@@ -1,6 +1,7 @@
 use futures::stream::BoxStream;
 use futures::StreamExt;
-use sqlx::{Error, MySql, Pool, QueryBuilder};
+use sqlx::{Error, MySql, Pool, QueryBuilder, Row};
+use std::fmt::format;
 use universalis_sdk::xivapi::Item;
 use universalis_sdk::{ItemTradeVolume, Server};
 
@@ -51,6 +52,28 @@ impl ItemData {
         Self { pool }
     }
 
+    pub async fn get_items_ids_for_delete(&self, actual_ids: Vec<u64>) -> Result<Vec<u64>, Error> {
+        let mut query_builder: QueryBuilder<MySql> =
+            QueryBuilder::new("SELECT item_id FROM items WHERE item_id NOT IN (");
+
+        let mut separated = query_builder.separated(", ");
+
+        for id in actual_ids.iter() {
+            separated.push_bind(id);
+        }
+
+        separated.push_unseparated(")");
+
+        let items_for_delete = query_builder.build().fetch_all(&self.pool).await?;
+
+        let ids_for_delete = items_for_delete
+            .iter()
+            .map(|row| row.get("item_id"))
+            .collect();
+
+        Ok(ids_for_delete)
+    }
+
     pub async fn save_items(&self, items: Vec<Item>) -> Result<(), Error> {
         let mut query_builder: QueryBuilder<MySql> =
             QueryBuilder::new("INSERT IGNORE INTO items(item_id, name)");
@@ -64,6 +87,21 @@ impl ItemData {
 
             query_builder.build().execute(&self.pool).await?;
         }
+
+        Ok(())
+    }
+
+    pub async fn delete_items(&self, items_ids: Vec<u64>) -> Result<(), Error> {
+        let query = format!(
+            "DELETE FROM items WHERE item_id IN ({})",
+            items_ids
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+
+        sqlx::query(&query).execute(&self.pool).await?;
 
         Ok(())
     }

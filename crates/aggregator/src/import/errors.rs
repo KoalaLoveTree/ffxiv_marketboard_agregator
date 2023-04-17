@@ -11,4 +11,6 @@ pub enum Error {
     TokioJoin(#[from] JoinError),
     #[error("Error while executing sql")]
     Sqlx(#[from] sqlx::Error),
+    #[error("Error while accessing HashMap element")]
+    Test,
 }

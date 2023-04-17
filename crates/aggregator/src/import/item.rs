@@ -27,6 +27,26 @@ impl ItemImport {
 
         self.item_data.save_items(marketable_items).await?;
 
+        let ids_for_delete = self
+            .item_data
+            .get_items_ids_for_delete(marketable_items_ids)
+            .await?;
+
+        self.item_data.delete_items(ids_for_delete);
+
+        Ok(())
+    }
+
+    pub async fn sync_items(&self) -> Result<(), Error> {
+        let marketable_items_ids = get_marketable_items_ids().await?;
+
+        let ids_for_delete = self
+            .item_data
+            .get_items_ids_for_delete(marketable_items_ids)
+            .await?;
+
+        self.item_data.delete_items(ids_for_delete);
+
         Ok(())
     }
 }

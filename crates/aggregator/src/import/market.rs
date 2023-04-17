@@ -1,7 +1,7 @@
 use crate::db::{DBItem, DBWorld, ItemData, ItemTrades, ServerData};
 use crate::import::errors::Error;
 use futures::future::try_join_all;
-use futures::TryStreamExt;
+use futures::{TryFutureExt, TryStreamExt};
 use std::collections::hash_map::Entry::Vacant;
 use std::collections::HashMap;
 use std::thread::sleep;
@@ -48,7 +48,7 @@ impl MarketImport {
 
         for world in &server.worlds {
             let items_handles: Vec<_> = items
-                .chunks(40)
+                .chunks(90)
                 .map(|chunk| {
                     let chunk_ids = chunk.iter().map(|item| item.item_id).collect();
 
@@ -110,18 +110,20 @@ impl MarketImport {
 
         let trade_volumes_handlers = items
             .iter()
-            .map(|item| {
-                let lowest_avg_item_price = lowest_avg_items_prices
-                    .remove(&item.item_id)
-                    .ok_or(Error::HashMapAccess)?;
+            .filter_map(|item| {
+                let lowest_avg_item_price = lowest_avg_items_prices.remove(&item.item_id);
 
-                Ok(MarketImport::avg_item_prices_to_trade_volume(
+                if lowest_avg_item_price.is_none() {
+                    return None;
+                }
+
+                Some(MarketImport::avg_item_prices_to_trade_volume(
                     item.item_id,
                     home_world.clone(),
-                    lowest_avg_item_price,
+                    lowest_avg_item_price.unwrap(),
                 ))
             })
-            .collect::<Result<Vec<_>, Error>>()?;
+            .collect::<Vec<_>>();
 
         let items_trade_volumes: Vec<ItemTradeVolume> =
             try_join_all(trade_volumes_handlers).await?;
