@@ -1,12 +1,12 @@
+use crate::db::ServerData;
 use crate::import::errors::Error;
-use db_sdk::ServerData;
 use universalis_sdk::get_servers;
 
-pub struct ServerImport<'a> {
-    server_data: &'a ServerData,
+pub struct ServerImport {
+    server_data: ServerData,
 }
-impl<'a> ServerImport<'a> {
-    pub fn new(server_data: &'a ServerData) -> Self {
+impl ServerImport {
+    pub fn new(server_data: ServerData) -> Self {
         Self { server_data }
     }
     pub async fn import_servers(&self) -> Result<(), Error> {

@@ -3,6 +3,4 @@
 members = [
     "crates/aggregator",
     "crates/universalis_sdk",
-    "crates/xivapi_sdk",
-    "crates/db_sdk",
 ]

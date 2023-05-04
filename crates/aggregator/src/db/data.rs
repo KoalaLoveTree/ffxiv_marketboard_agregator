@@ -1,9 +1,9 @@
-pub mod errors;
-
-use crate::errors::Error;
-use sqlx::{MySql, Pool, QueryBuilder};
+use futures::stream::BoxStream;
+use futures::StreamExt;
+use sqlx::{Error, MySql, Pool, QueryBuilder, Row};
+use std::fmt::format;
+use universalis_sdk::xivapi::Item;
 use universalis_sdk::{ItemTradeVolume, Server};
-use xivapi_sdk::Item;
 
 const BIND_LIMIT: usize = 65535;
 
@@ -25,6 +25,7 @@ pub struct DBServer {
     pub data_center: DBDataCenter,
     pub worlds: Vec<DBWorld>,
 }
+
 #[derive(Debug, Clone)]
 pub struct DBItem {
     pub item_id: u64,
@@ -51,6 +52,28 @@ impl ItemData {
         Self { pool }
     }
 
+    pub async fn get_items_ids_for_delete(&self, actual_ids: Vec<u64>) -> Result<Vec<u64>, Error> {
+        let mut query_builder: QueryBuilder<MySql> =
+            QueryBuilder::new("SELECT item_id FROM items WHERE item_id NOT IN (");
+
+        let mut separated = query_builder.separated(", ");
+
+        for id in actual_ids.iter() {
+            separated.push_bind(id);
+        }
+
+        separated.push_unseparated(")");
+
+        let items_for_delete = query_builder.build().fetch_all(&self.pool).await?;
+
+        let ids_for_delete = items_for_delete
+            .iter()
+            .map(|row| row.get("item_id"))
+            .collect();
+
+        Ok(ids_for_delete)
+    }
+
     pub async fn save_items(&self, items: Vec<Item>) -> Result<(), Error> {
         let mut query_builder: QueryBuilder<MySql> =
             QueryBuilder::new("INSERT IGNORE INTO items(item_id, name)");
@@ -68,13 +91,25 @@ impl ItemData {
         Ok(())
     }
 
-    pub async fn get_items(&self) -> Result<Vec<DBItem>, Error> {
-        //TODO remove limit, added for tests
-        let items = sqlx::query_as!(DBItem, r"SELECT * FROM items LIMIT 100")
-            .fetch_all(&self.pool)
-            .await?;
+    pub async fn delete_items(&self, items_ids: Vec<u64>) -> Result<(), Error> {
+        let query = format!(
+            "DELETE FROM items WHERE item_id IN ({})",
+            items_ids
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        );
 
-        Ok(items)
+        sqlx::query(&query).execute(&self.pool).await?;
+
+        Ok(())
+    }
+
+    pub fn get_items(&self) -> BoxStream<Result<DBItem, Error>> {
+        sqlx::query_as!(DBItem, r"SELECT * FROM items")
+            .fetch(&self.pool)
+            .boxed()
     }
 }
 
@@ -95,8 +130,7 @@ impl ItemTrades {
             "INSERT IGNORE INTO items_trade_volumes (item_id, world_id, sale_score, price_diff_score, cheapest_world_id, home_world_avg_price)"
         );
 
-        let items_trade_volumes_chunks =
-            items_trade_volumes.chunks(BIND_LIMIT / 6);
+        let items_trade_volumes_chunks = items_trade_volumes.chunks(BIND_LIMIT / 6);
 
         for items_trade_volumes_chunk in items_trade_volumes_chunks {
             query_builder.push_values(items_trade_volumes_chunk, |mut b, item_trade_volume| {
@@ -112,23 +146,6 @@ impl ItemTrades {
         }
 
         Ok(())
-    }
-
-    pub async fn get_item_trade_volume_by_world(
-        &self,
-        world_id: u64,
-        item_id: u64,
-    ) -> Result<DBItemTradeVolume, Error> {
-        let item_trade_volume = sqlx::query_as!(
-            DBItemTradeVolume,
-            r"SELECT * FROM items_trade_volumes WHERE item_id = ? AND world_id = ?",
-            item_id,
-            world_id
-        )
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(item_trade_volume)
     }
 }
 

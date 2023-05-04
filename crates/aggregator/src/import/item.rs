@@ -1,14 +1,14 @@
+use crate::db::ItemData;
 use crate::import::errors::Error;
-use db_sdk::ItemData;
 use universalis_sdk::get_marketable_items_ids;
-use xivapi_sdk::get_all_items;
+use universalis_sdk::xivapi::get_all_items;
 
-pub struct ItemImport<'a> {
-    item_data: &'a ItemData,
+pub struct ItemImport {
+    item_data: ItemData,
 }
 
-impl<'a> ItemImport<'a> {
-    pub fn new(item_data: &'a ItemData) -> Self {
+impl ItemImport {
+    pub fn new(item_data: ItemData) -> Self {
         Self { item_data }
     }
 
@@ -26,6 +26,26 @@ impl<'a> ItemImport<'a> {
             .collect();
 
         self.item_data.save_items(marketable_items).await?;
+
+        let ids_for_delete = self
+            .item_data
+            .get_items_ids_for_delete(marketable_items_ids)
+            .await?;
+
+        self.item_data.delete_items(ids_for_delete);
+
+        Ok(())
+    }
+
+    pub async fn sync_items(&self) -> Result<(), Error> {
+        let marketable_items_ids = get_marketable_items_ids().await?;
+
+        let ids_for_delete = self
+            .item_data
+            .get_items_ids_for_delete(marketable_items_ids)
+            .await?;
+
+        self.item_data.delete_items(ids_for_delete);
 
         Ok(())
     }
